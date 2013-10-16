@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<title>World press freedom index map 2013</title>
+	<style>
+
+	body {
+	  background: #333 none;
+	}
+
+	.stroke {
+	  fill: none;
+	  stroke: #020;
+	  stroke-width: 3px;
+	}
+
+	.fill {
+	  fill: #fff;
+	}
+
+	.graticule {
+	  fill: none;
+	  stroke: #000;
+	  stroke-width: .5px;
+	  stroke-opacity: .5;
+	}
+
+	.land {
+	  fill: #222;
+	}
+
+	.boundary {
+	  fill: none;
+	  stroke: #0ff;
+	  stroke-width: .5px;
+	}
+
+	</style>
+	<script src="d3.js"></script>
+	<script src="queue.v1.min.js"></script>
+</head>	
+
+<body>
+
+<script>
+
+
+//définition du canvas
+var width = 960,
+    height = 960;
+
+// définition du type de projection
+var projection = d3.geo.azimuthalEqualArea()
+    .clipAngle(180 - 1e-3)
+    .scale(237)
+    .translate([width / 2, height / 2])
+    .precision(.1);
+
+// application du type de projection à la forme Path
+var path = d3.geo.path()
+    .projection(projection);
+
+var graticule = d3.geo.graticule();
+
+// création de l'objet svg
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+//créationd e la shpère de fond
+svg.append("defs").append("path")
+    .datum({type: "Sphere"})
+    .attr("id", "sphere")
+    .attr("d", path)
+	.style("fill", "#4bb1e1");
+
+svg.append("use")
+    .attr("class", "stroke")
+    .attr("xlink:href", "#sphere");
+
+svg.append("use")
+    .attr("class", "fill")
+    .attr("xlink:href", "#sphere");
+
+// ajout des graticules à l'objet svg
+svg.append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("d", path);
+
+// tableau de couleurs en fonction de l'index
+var couleurs = []
+	
+	
+//prennons le temps d'analyser le csv avant de lancer "function ready()"
+	queue()
+	    .defer(d3.csv, "index.csv", function(d,i) { 
+			
+			couleurs[d.iso] = d.cat;
+			})
+		.await(ready);
+	
+function ready(error, us) {
+	
+	d3.json("world-countries.json", function(collection) {
+	  feature = svg.selectAll("path")
+	      .data(collection.features)
+	      .enter().append("svg:path")
+	      .attr("d", path)
+		  .style("fill", function(d){
+		  					//pour chaque pays, on regarde quelle couleur à appliquer en fonction de la situation
+							if(d.id == "AGO"){
+								return "#f29901";
+							}
+							switch(couleurs[d.id]) { 
+								case "Very serious situation":
+									return "#000";
+								break;
+								case "Difficult situation":
+									return "#dc002e";
+								break; 
+
+								case "Noticeable problems":
+									return "#f29901";
+								break;
+								case "Satisfactory situation":
+									return "#fee504";
+								break;
+								case "Good situation":
+									return "#fff";
+								break;
+								default:
+									return "#fff";
+								break;
+				
+				
+								}   
+						   })
+			.style("stroke", "rgba(0,0,0,0.3)")
+			.attr('id',function(d){ return d.properties.name; });
+		
+		
+
+                                                                            
+	});
+	
+	
+}
+
+d3.select(self.frameElement).style("height", height + "px");
+
+</script>
